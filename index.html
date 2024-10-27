@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Pulsa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+        }
+        h1 {
+            color: #4CAF50;
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+            flex: 1;
+            min-width: 120px;
+            box-sizing: border-box;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .add-item-button {
+            background-color: #2196F3;
+        }
+        .add-item-button:hover {
+            background-color: #1976D2;
+        }
+        .pulsa-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #fafafa;
+            position: relative;
+        }
+        .remove-button {
+            background-color: #f44336;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 0 10px;
+            }
+            h1 {
+                font-size: 20px;
+            }
+            form {
+                padding: 15px;
+                width: 100%;
+                max-width: 100%;
+            }
+            .button-group {
+                width: 90%;
+            }
+            button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Generate Invoice Pulsa</h1>
+    
+    <form id="invoiceForm">
+        <label for="clientName">Nama Pelanggan:</label>
+        <input type="text" id="clientName" name="clientName" placeholder="Masukkan nama pelanggan" required>
+
+        <label for="clientAddress">Alamat Pelanggan:</label>
+        <input type="text" id="clientAddress" name="clientAddress" placeholder="Masukkan alamat pelanggan" required>
+
+        <h3>Detail Pembelian Pulsa:</h3>
+        <div id="pulsaItems">
+            <div class="pulsa-item">
+                <label>Nomor Telepon:</label>
+                <input type="text" name="phone" placeholder="Nomor telepon pelanggan" required>
+                
+                <label>Deskripsi:</label>
+                <input type="text" name="description" placeholder="Deskripsi produk" required>
+                
+                <label>Harga (Rp):</label>
+                <input type="number" name="price" placeholder="Harga pulsa" required>
+                
+                <button type="button" class="remove-button" onclick="removeItem(this)">Hapus</button>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button type="button" class="add-item-button" onclick="addItem()">Tambah Item</button>
+            <button type="button" onclick="generatePDF()">Generate PDF</button>
+        </div>
+    </form>
+
+    <script src="https://unpkg.com/jspdf-invoice-template@1.4.0/dist/index.js"></script>
+    <script>
+        function addItem() {
+            const itemContainer = document.createElement("div");
+            itemContainer.classList.add("pulsa-item");
+
+            itemContainer.innerHTML = `
+                <label>Nomor Telepon:</label>
+                <input type="text" name="phone" placeholder="Nomor telepon pelanggan" required>
+
+                <label>Deskripsi:</label>
+                <input type="text" name="description" placeholder="Deskripsi produk" required>
+                
+                <label>Harga (Rp):</label>
+                <input type="number" name="price" placeholder="Harga pulsa" required>
+                
+                <button type="button" class="remove-button" onclick="removeItem(this)">Hapus</button>
+            `;
+            document.getElementById("pulsaItems").appendChild(itemContainer);
+        }
+
+        function removeItem(button) {
+            button.parentElement.remove();
+        }
+
+        function generatePDF() {
+            const clientName = document.getElementById('clientName').value;
+            const clientAddress = document.getElementById('clientAddress').value;
+
+            const phones = document.getElementsByName("phone");
+            const descriptions = document.getElementsByName("description");
+            const prices = document.getElementsByName("price");
+
+            if (!clientName || !clientAddress || descriptions.length === 0) {
+                alert("Mohon lengkapi semua data!");
+                return;
+            }
+
+            let totalAmount = 0;
+            const tableData = [];
+
+            descriptions.forEach((desc, index) => {
+                const phone = phones[index].value;
+                const price = parseFloat(prices[index].value);
+                tableData.push([index + 1, phone, desc.value, price.toLocaleString()]);
+                totalAmount += price;
+            });
+
+            var props = {
+                outputType: jsPDFInvoiceTemplate.OutputType.Save,
+                returnJsPDFDocObject: true,
+                fileName: "Invoice Pulsa",
+                orientationLandscape: false,
+                compress: true,
+                logo: {
+                    src: "./asset/H (1).png",
+                    width: 35,
+                    height: 20,
+                },
+                business: {
+                    name: "HAFID CELL",
+                    address: "Jl. Telekomunikasi No.1, Bandung",
+                    phone: "(+62) 81239900323",
+                    email: "HafidCell@gmail.com",
+                    website: "www.HafidCell.com",
+                },
+                contact: {
+                    label: "Invoice untuk:",
+                    name: clientName,
+                    address: clientAddress,
+                },
+                invoice: {
+                    label: "Invoice #: ",
+                    num: Math.floor(Math.random() * 1000),
+                    invDate: `Tanggal: ${new Date().toLocaleDateString()}`,
+                    invGenDate: `Waktu: ${new Date().toLocaleTimeString()}`,
+                    headerBorder: false,
+                    tableBodyBorder: false,
+                    header: [
+                        { title: "#", style: { width: 10 } },
+                        { title: "Nomor Telepon", style: { width: 30 } },
+                        { title: "Deskripsi", style: { width: 80 } },
+                        { title: "Harga (Rp)" }
+                    ],
+                    table: tableData,
+                    additionalRows: [
+                        {
+                            col1: "Total:",
+                            col2: totalAmount.toLocaleString(),
+                            col3: "Rp",
+                            style: { fontSize: 14 }
+                        }
+                    ],
+                    invDescLabel: "Keterangan:",
+                    invDesc: "Terima kasih atas pembelian pulsa Anda.",
+                },
+                footer: {
+                    text: "Invoice ini sah tanpa tanda tangan dan cap.",
+                },
+                pageEnable: true,
+                pageLabel: "Halaman ",
+            };
+
+            var pdfObject = jsPDFInvoiceTemplate.default(props);
+            console.log("Object created: ", pdfObject);
+        }
+    </script>
+</body>
+</html>
